@@ -16,8 +16,8 @@ API_KEY = os.environ.get("FOOTBALL_API_KEY", "")
 API_BASE = "https://api.football-data.org/v4"
 WC_ID = 2000  # FIFA World Cup 2026 competition ID
 
-# CDMX timezone (UTC-5)
-CDMX = timezone(timedelta(hours=-5))
+# CDMX timezone (UTC-6, permanente desde que México eliminó horario de verano)
+CDMX = timezone(timedelta(hours=-6))
 
 # ─── QUINIELA DATA ─────────────────────────────────────────────────────────────
 PLAYERS = {
@@ -452,7 +452,7 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
 <div id="hoy" class="section">
   <div class="today-hdr">
     <span class="today-dt" id="today-title"></span>
-    <span class="today-tz">Hora CDMX (UTC−5)</span>
+    <span class="today-tz">Hora CDMX (UTC−6)</span>
   </div>
   <div id="fixtures-list"></div>
 </div>
@@ -554,7 +554,7 @@ function renderTeams() {{
 
 function renderToday() {{
   var now = new Date();
-  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-5*60))*60000;
+  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-6*60))*60000;
   var cn = new Date(cdmxMs);
   var mm = (cn.getMonth()+1 < 10 ? '0' : '') + (cn.getMonth()+1);
   var dd = (cn.getDate() < 10 ? '0' : '') + cn.getDate();

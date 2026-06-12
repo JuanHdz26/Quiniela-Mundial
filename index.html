@@ -450,7 +450,7 @@ tl.innerHTML = tlHtml;
 // Render partidos del día
 function renderToday() {
   var now = new Date();
-  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-5*60)) * 60000;
+  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-6*60)) * 60000;
   var cn = new Date(cdmxMs);
   var yy=cn.getFullYear();
   var mm2 = (cn.getMonth()+1 < 10 ? '0' : '') + (cn.getMonth()+1);

@@ -118,6 +118,13 @@ def fetch_matches():
         return None  # error real de la API → no tocar el index.html existente
     return data.get("matches", [])
 
+def fetch_scorers():
+    """Top goleadores del torneo. Devuelve [] si la API falla (no es crítico)."""
+    data = api_get(f"/competitions/{WC_ID}/scorers?limit=15")
+    if data is None:
+        return []
+    return data.get("scorers", [])
+
 # ─── SCORE CALCULATION ─────────────────────────────────────────────────────────
 def determine_round(match):
     stage = match.get("stage", "")
@@ -237,7 +244,7 @@ def compute_totals(scores):
     return totals
 
 # ─── HTML GENERATION ───────────────────────────────────────────────────────────
-def generate_html(scores, log, totals, match_count, updated_str):
+def generate_html(scores, log, totals, match_count, updated_str, scorers=None):
     sorted_players = sorted(totals.items(), key=lambda x: x[1], reverse=True)
     max_pts = sorted_players[0][1] if sorted_players else 1
 
@@ -308,44 +315,63 @@ def generate_html(scores, log, totals, match_count, updated_str):
         tteams = " · ".join(PLAYERS[p][tier] for p in PLAYERS)
         tier_list_html += f'<div class="r-row"><span class="r-lbl"><span class="tdot" style="background:{TIER_CSS[tier]}"></span>Tier {i+1}</span><span style="font-size:11px;color:var(--muted);text-align:right;flex:1;padding-left:8px">{tteams}</span></div>'
 
+    # Goleadores HTML (top 15, solo goles, con dueño de la quiniela)
+    scorers_html = ""
+    if not scorers:
+        scorers_html = '<p style="color:var(--muted);font-size:13px;">Aún no hay goleadores registrados.</p>'
+    else:
+        for i, s in enumerate(scorers[:15]):
+            pl = s.get("player", {}) or {}
+            tm = s.get("team", {}) or {}
+            goals = s.get("goals", 0) or 0
+            name = pl.get("name", "?")
+            team_es = map_team(tm)
+            owner = get_owner(team_es)
+            team_line = team_es + (f' · <span style="color:var(--accent)">{owner}</span>' if owner else "")
+            scorers_html += f'''<div class="sc-row">
+      <div class="sc-rank">{i+1}</div>
+      <div class="sc-goals">{goals}</div>
+      <div class="sc-info"><div class="sc-name">{name}</div><div class="sc-team">{team_line}</div></div>
+    </div>'''
+
     # Schedule JS array (group stage only — knockout TBD)
     schedule_js = """var SCHEDULE = [
-    ['2026-06-11','México','Sudáfrica','A','14:00'],['2026-06-11','Corea del Sur','Rep. Checa','A','21:00'],
-    ['2026-06-12','Canadá','Bosnia','B','14:00'],['2026-06-12','USA','Paraguay','D','20:00'],
-    ['2026-06-13','Qatar','Suiza','B','14:00'],['2026-06-13','Brasil','Marruecos','C','17:00'],
-    ['2026-06-13','Haití','Escocia','C','20:00'],['2026-06-13','Australia','Turquía','D','23:00'],
-    ['2026-06-14','Alemania','Curazao','E','12:00'],['2026-06-14','Países Bajos','Japón','F','15:00'],
-    ['2026-06-14','Costa de Marfil','Ecuador','E','18:00'],['2026-06-14','Suecia','Túnez','F','21:00'],
-    ['2026-06-15','España','Cabo Verde','H','11:00'],['2026-06-15','Bélgica','Egipto','G','14:00'],
-    ['2026-06-15','Arabia Saudita','Uruguay','H','17:00'],['2026-06-15','Irán','Nueva Zelanda','G','20:00'],
-    ['2026-06-16','Francia','Senegal','I','14:00'],['2026-06-16','Iraq','Noruega','I','17:00'],
-    ['2026-06-16','Argentina','Argelia','J','20:00'],['2026-06-16','Austria','Jordania','J','23:00'],
-    ['2026-06-17','Portugal','Uzbekistán','K','12:00'],['2026-06-17','Inglaterra','Ghana','L','15:00'],
-    ['2026-06-17','Panamá','Croacia','K','18:00'],['2026-06-17','Colombia','Congo','L','21:00'],
-    ['2026-06-18','Rep. Checa','Sudáfrica','A','11:00'],['2026-06-18','Suiza','Bosnia','B','14:00'],
-    ['2026-06-18','Canadá','Qatar','B','17:00'],['2026-06-18','México','Corea del Sur','A','20:00'],
-    ['2026-06-19','USA','Australia','D','14:00'],['2026-06-19','Escocia','Marruecos','C','17:00'],
-    ['2026-06-19','Brasil','Haití','C','20:00'],['2026-06-19','Turquía','Paraguay','D','23:00'],
-    ['2026-06-20','Países Bajos','Suecia','F','12:00'],['2026-06-20','Alemania','Costa de Marfil','E','15:00'],
-    ['2026-06-20','Ecuador','Curazao','E','19:00'],['2026-06-20','Túnez','Japón','F','23:00'],
-    ['2026-06-21','España','Arabia Saudita','H','11:00'],['2026-06-21','Bélgica','Irán','G','14:00'],
-    ['2026-06-21','Uruguay','Cabo Verde','H','17:00'],['2026-06-21','Nueva Zelanda','Egipto','G','20:00'],
-    ['2026-06-22','Argentina','Austria','J','12:00'],['2026-06-22','Francia','Iraq','I','16:00'],
-    ['2026-06-22','Noruega','Senegal','I','19:00'],['2026-06-22','Jordania','Argelia','J','22:00'],
-    ['2026-06-23','Portugal','Uzbekistán','K','12:00'],['2026-06-23','Inglaterra','Ghana','L','15:00'],
-    ['2026-06-23','Panamá','Croacia','K','18:00'],['2026-06-23','Colombia','Congo','L','21:00'],
-    ['2026-06-24','Suiza','Canadá','B','14:00'],['2026-06-24','Bosnia','Qatar','B','14:00'],
-    ['2026-06-24','Escocia','Brasil','C','17:00'],['2026-06-24','Marruecos','Haití','C','17:00'],
-    ['2026-06-24','Rep. Checa','México','A','20:00'],['2026-06-24','Sudáfrica','Corea del Sur','A','20:00'],
-    ['2026-06-25','Australia','Paraguay','D','14:00'],['2026-06-25','Turquía','USA','D','14:00'],
-    ['2026-06-25','Ecuador','Alemania','E','17:00'],['2026-06-25','Curazao','Costa de Marfil','E','17:00'],
-    ['2026-06-26','Japón','Países Bajos','F','14:00'],['2026-06-26','Túnez','Suecia','F','14:00'],
-    ['2026-06-26','Irán','Bélgica','G','17:00'],['2026-06-26','Egipto','España','H','17:00'],
-    ['2026-06-26','Nueva Zelanda','Uruguay','H','20:00'],['2026-06-26','Congo','Bélgica','G','20:00'],
-    ['2026-06-27','Senegal','Francia','I','14:00'],['2026-06-27','Noruega','Iraq','I','14:00'],
-    ['2026-06-27','Argelia','Argentina','J','17:00'],['2026-06-27','Jordania','Austria','J','17:00'],
-    ['2026-06-27','Ghana','Panamá','K','20:00'],['2026-06-27','Uzbekistán','Colombia','K','20:00'],
-    ['2026-06-27','Croacia','Inglaterra','L','23:00'],['2026-06-27','Congo DR','Uzbekistán','L','23:00']
+    ['2026-06-11','México','Sudáfrica','A','13:00'],['2026-06-11','Corea del Sur','Rep. Checa','A','20:00'],
+    ['2026-06-12','Canadá','Bosnia','B','13:00'],['2026-06-12','USA','Paraguay','D','19:00'],
+    ['2026-06-13','Qatar','Suiza','B','13:00'],['2026-06-13','Brasil','Marruecos','C','16:00'],
+    ['2026-06-13','Haití','Escocia','C','19:00'],['2026-06-13','Australia','Turquía','D','22:00'],
+    ['2026-06-14','Alemania','Curazao','E','11:00'],['2026-06-14','Países Bajos','Japón','F','14:00'],
+    ['2026-06-14','Costa de Marfil','Ecuador','E','17:00'],['2026-06-14','Suecia','Túnez','F','20:00'],
+    ['2026-06-15','España','Cabo Verde','H','10:00'],['2026-06-15','Bélgica','Egipto','G','13:00'],
+    ['2026-06-15','Arabia','Uruguay','H','16:00'],['2026-06-15','Irán','Nueva Zelanda','G','19:00'],
+    ['2026-06-16','Francia','Senegal','I','13:00'],['2026-06-16','Iraq','Noruega','I','16:00'],
+    ['2026-06-16','Argentina','Argelia','J','19:00'],['2026-06-16','Austria','Jordania','J','22:00'],
+    ['2026-06-17','Portugal','Uzbekistán','K','11:00'],['2026-06-17','Inglaterra','Ghana','L','14:00'],
+    ['2026-06-17','Panamá','Croacia','K','17:00'],['2026-06-17','Colombia','Congo','L','20:00'],
+    ['2026-06-18','Rep. Checa','Sudáfrica','A','10:00'],['2026-06-18','Suiza','Bosnia','B','13:00'],
+    ['2026-06-18','Canadá','Qatar','B','16:00'],['2026-06-18','México','Corea del Sur','A','19:00'],
+    ['2026-06-19','USA','Australia','D','13:00'],['2026-06-19','Escocia','Marruecos','C','16:00'],
+    ['2026-06-19','Brasil','Haití','C','19:00'],['2026-06-19','Turquía','Paraguay','D','22:00'],
+    ['2026-06-20','Países Bajos','Suecia','F','11:00'],['2026-06-20','Alemania','Costa de Marfil','E','14:00'],
+    ['2026-06-20','Ecuador','Curazao','E','18:00'],['2026-06-20','Túnez','Japón','F','22:00'],
+    ['2026-06-21','España','Arabia','H','10:00'],['2026-06-21','Bélgica','Irán','G','13:00'],
+    ['2026-06-21','Uruguay','Cabo Verde','H','16:00'],['2026-06-21','Nueva Zelanda','Egipto','G','19:00'],
+    ['2026-06-22','Argentina','Austria','J','11:00'],['2026-06-22','Francia','Iraq','I','15:00'],
+    ['2026-06-22','Noruega','Senegal','I','18:00'],['2026-06-22','Jordania','Argelia','J','21:00'],
+    ['2026-06-23','Portugal','Uzbekistán','K','11:00'],['2026-06-23','Inglaterra','Ghana','L','14:00'],
+    ['2026-06-23','Panamá','Croacia','K','17:00'],['2026-06-23','Colombia','Congo','L','20:00'],
+    ['2026-06-24','Suiza','Canadá','B','13:00'],['2026-06-24','Bosnia','Qatar','B','13:00'],
+    ['2026-06-24','Escocia','Brasil','C','16:00'],['2026-06-24','Marruecos','Haití','C','16:00'],
+    ['2026-06-24','Rep. Checa','México','A','19:00'],['2026-06-24','Sudáfrica','Corea del Sur','A','19:00'],
+    ['2026-06-25','Australia','Paraguay','D','13:00'],['2026-06-25','Turquía','USA','D','13:00'],
+    ['2026-06-25','Ecuador','Alemania','E','16:00'],['2026-06-25','Curazao','Costa de Marfil','E','16:00'],
+    ['2026-06-26','Japón','Países Bajos','F','13:00'],['2026-06-26','Túnez','Suecia','F','13:00'],
+    ['2026-06-26','Irán','Bélgica','G','16:00'],['2026-06-26','Egipto','España','H','16:00'],
+    ['2026-06-26','Nueva Zelanda','Uruguay','H','19:00'],['2026-06-26','Congo','Bélgica','G','19:00'],
+    ['2026-06-27','Senegal','Francia','I','13:00'],['2026-06-27','Noruega','Iraq','I','13:00'],
+    ['2026-06-27','Argelia','Argentina','J','16:00'],['2026-06-27','Jordania','Austria','J','16:00'],
+    ['2026-06-27','Ghana','Panamá','K','19:00'],['2026-06-27','Uzbekistán','Colombia','K','19:00'],
+    ['2026-06-27','Croacia','Inglaterra','L','22:00'],['2026-06-27','Congo','Uzbekistán','L','22:00']
   ];"""
 
     players_js = "var PLAYERS = " + json.dumps(PLAYERS, ensure_ascii=False) + ";"
@@ -425,6 +451,8 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
 .today-hdr{{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:6px}}
 .today-dt{{font-size:22px;font-weight:700}}
 .today-tz{{font-size:11px;color:var(--muted);background:var(--surface2);border-radius:4px;padding:3px 8px}}
+.day-group{{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 12px}}
+#fixtures-list .day-group:first-child{{margin-top:4px}}
 .fix-card{{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:grid;grid-template-columns:58px 1fr;align-items:start;gap:12px}}
 .fix-card.live{{border-color:rgba(0,200,122,.4)}}.fix-card.done{{opacity:.55}}
 .fix-hour{{font-size:22px;font-weight:700;line-height:1;text-align:center}}
@@ -436,6 +464,13 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
 .fix-badges{{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}}
 .fbadge{{font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;display:inline-block}}
 .no-matches{{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}}
+.sc-row{{display:grid;grid-template-columns:28px 40px 1fr;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px}}
+.sc-row.top1{{border-color:rgba(245,200,66,0.3)}}
+.sc-rank{{font-size:14px;font-weight:700;color:var(--muted);text-align:center}}
+.sc-goals{{font-size:22px;font-weight:700;color:var(--accent);text-align:center;line-height:1}}
+.sc-info{{min-width:0}}
+.sc-name{{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.sc-team{{font-size:11px;color:var(--muted);margin-top:2px}}
 .rules-grid{{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
 @media(max-width:480px){{.rules-grid{{grid-template-columns:1fr}}}}
 .r-card{{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}}
@@ -461,8 +496,9 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
 </div>
 <div class="nav">
   <button class="nav-tab active" onclick="showTab('tabla')">Tabla</button>
-  <button class="nav-tab" onclick="showTab('hoy')">Partidos del día</button>
+  <button class="nav-tab" onclick="showTab('hoy')">Próximos partidos</button>
   <button class="nav-tab" onclick="showTab('equipos')">Equipos</button>
+  <button class="nav-tab" onclick="showTab('goleadores')">Goleadores</button>
   <button class="nav-tab" onclick="showTab('historial')">Historial</button>
   <button class="nav-tab" onclick="showTab('reglas')">Reglas</button>
 </div>
@@ -472,7 +508,7 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
 </div>
 <div id="hoy" class="section">
   <div class="today-hdr">
-    <span class="today-dt" id="today-title"></span>
+    <span class="today-dt">Próximos partidos</span>
     <span class="today-tz">Hora CDMX (UTC−6)</span>
   </div>
   <div id="fixtures-list"></div>
@@ -481,6 +517,10 @@ body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sa
   <div class="sec-heading">Equipos por participante</div>
   <div class="filter-bar" id="filter-bar"></div>
   <div id="teams-container">{teams_html}</div>
+</div>
+<div id="goleadores" class="section">
+  <div class="sec-heading">Tabla de goleadores</div>
+  <div id="scorers-list">{scorers_html}</div>
 </div>
 <div id="historial" class="section">
   <div class="sec-heading">Resultados registrados</div>
@@ -577,40 +617,52 @@ function renderToday() {{
   var now = new Date();
   var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-6*60))*60000;
   var cn = new Date(cdmxMs);
-  var mm = (cn.getMonth()+1 < 10 ? '0' : '') + (cn.getMonth()+1);
-  var dd = (cn.getDate() < 10 ? '0' : '') + cn.getDate();
-  var todayStr = cn.getFullYear()+'-'+mm+'-'+dd;
   var nowMins = cn.getHours()*60+cn.getMinutes();
   var days=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   var months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  var titleEl = document.getElementById('today-title');
-  if (titleEl) titleEl.textContent = days[cn.getDay()]+' '+cn.getDate()+' de '+months[cn.getMonth()];
-  var todays = [];
-  for (var i=0;i<SCHEDULE.length;i++) if (SCHEDULE[i][0]===todayStr) todays.push(SCHEDULE[i]);
+  function dstr(d) {{
+    var m=(d.getMonth()+1<10?'0':'')+(d.getMonth()+1);
+    var dd=(d.getDate()<10?'0':'')+d.getDate();
+    return d.getFullYear()+'-'+m+'-'+dd;
+  }}
   var fc = document.getElementById('fixtures-list');
   if (!fc) return;
-  if (!todays.length) {{ fc.innerHTML='<div class="no-matches"><div style="font-size:32px;margin-bottom:10px">📅</div>No hay partidos hoy.</div>'; return; }}
-  var html = '';
-  for (var fi=0;fi<todays.length;fi++) {{
-    var fx=todays[fi], ft1=fx[1], ft2=fx[2], fgrp=fx[3], ftime=fx[4];
-    var fh=parseInt(ftime.split(':')[0]), fm2=parseInt(ftime.split(':')[1]);
-    var fmins=fh*60+fm2, diff=fmins-nowMins;
-    var sClass='',sLabel='',cClass='';
-    if (diff<-105){{sClass='s-done';sLabel='Finalizado';cClass='done';}}
-    else if (diff<0){{sClass='s-live';sLabel='🔴 En vivo';cClass='live';}}
-    else if (diff<60){{sClass='s-soon';sLabel='En '+diff+' min';}}
-    var o1=getOwner(ft1), o2=getOwner(ft2);
-    var badges='';
-    if (o1) badges+='<span class="fbadge" style="background:rgba(0,200,122,.12);color:#4ddfaa">'+o1+' — '+ft1+'</span> ';
-    if (o2) badges+='<span class="fbadge" style="background:rgba(124,111,247,.12);color:#a99fff">'+o2+' — '+ft2+'</span>';
-    html+='<div class="fix-card '+cClass+'"><div class="fix-time"><div class="fix-hour">'+ftime+'</div>'+(sLabel?'<div class="fix-status '+sClass+'">'+sLabel+'</div>':'')+'</div><div><div class="fix-matchup">'+ft1+' <span class="fix-vs">vs</span> '+ft2+'</div><div class="fix-meta">Grupo '+fgrp+'</div>'+(badges?'<div class="fix-badges">'+badges+'</div>':'')+'</div></div>';
+  var html = '', total = 0;
+  // Hoy + los siguientes 2 días
+  for (var k=0;k<3;k++) {{
+    var d = new Date(cn.getTime() + k*86400000);
+    var key = dstr(d);
+    var dayMatches = [];
+    for (var i=0;i<SCHEDULE.length;i++) if (SCHEDULE[i][0]===key) dayMatches.push(SCHEDULE[i]);
+    if (!dayMatches.length) continue;
+    total += dayMatches.length;
+    var label = days[d.getDay()]+' '+d.getDate()+' de '+months[d.getMonth()];
+    if (k===0) label = 'Hoy · '+label;
+    html += '<div class="day-group">'+label+'</div>';
+    for (var fi=0;fi<dayMatches.length;fi++) {{
+      var fx=dayMatches[fi], ft1=fx[1], ft2=fx[2], fgrp=fx[3], ftime=fx[4];
+      var sClass='',sLabel='',cClass='';
+      if (k===0) {{
+        var fh=parseInt(ftime.split(':')[0]), fm2=parseInt(ftime.split(':')[1]);
+        var fmins=fh*60+fm2, diff=fmins-nowMins;
+        if (diff<-105){{sClass='s-done';sLabel='Finalizado';cClass='done';}}
+        else if (diff<0){{sClass='s-live';sLabel='🔴 En vivo';cClass='live';}}
+        else if (diff<60){{sClass='s-soon';sLabel='En '+diff+' min';}}
+      }}
+      var o1=getOwner(ft1), o2=getOwner(ft2);
+      var badges='';
+      if (o1) badges+='<span class="fbadge" style="background:rgba(0,200,122,.12);color:#4ddfaa">'+o1+' — '+ft1+'</span> ';
+      if (o2) badges+='<span class="fbadge" style="background:rgba(124,111,247,.12);color:#a99fff">'+o2+' — '+ft2+'</span>';
+      html+='<div class="fix-card '+cClass+'"><div class="fix-time"><div class="fix-hour">'+ftime+'</div>'+(sLabel?'<div class="fix-status '+sClass+'">'+sLabel+'</div>':'')+'</div><div><div class="fix-matchup">'+ft1+' <span class="fix-vs">vs</span> '+ft2+'</div><div class="fix-meta">Grupo '+fgrp+'</div>'+(badges?'<div class="fix-badges">'+badges+'</div>':'')+'</div></div>';
+    }}
   }}
+  if (!total) {{ fc.innerHTML='<div class="no-matches"><div style="font-size:32px;margin-bottom:10px">📅</div>No hay partidos en los próximos 3 días.</div>'; return; }}
   fc.innerHTML = html;
 }}
 
 window.showTab = function(name) {{
   var tabs = document.querySelectorAll('.nav-tab');
-  var names = ['tabla','hoy','equipos','historial','reglas'];
+  var names = ['tabla','hoy','equipos','goleadores','historial','reglas'];
   for (var i=0;i<tabs.length;i++) tabs[i].classList.toggle('active', names[i]===name);
   var secs = document.querySelectorAll('.section');
   for (var i=0;i<secs.length;i++) secs[i].classList.toggle('active', secs[i].id===name);
@@ -639,11 +691,14 @@ def main():
     scores, log = build_scores(matches)
     totals = compute_totals(scores)
 
+    scorers = fetch_scorers()
+    print(f"Found {len(scorers)} scorers")
+
     now_cdmx = datetime.now(CDMX)
     months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
     updated_str = f"Actualizado: {now_cdmx.day} {months[now_cdmx.month-1]} {now_cdmx.year}"
 
-    html = generate_html(scores, log, totals, len(log), updated_str)
+    html = generate_html(scores, log, totals, len(log), updated_str, scorers)
 
     out_path = os.path.join(os.path.dirname(__file__), "index.html")
     with open(out_path, "w", encoding="utf-8") as f:

@@ -33,27 +33,49 @@ PLAYERS = {
 
 MULT = {"T1":1.0,"T2":1.25,"T3":1.5,"T4":2.0,"T5":3.0,"T6":4.0}
 
-# Map API team names → quiniela names
-TEAM_MAP = {
+# Map API team code (TLA, 3 letras) → quiniela name.
+# Los TLA son estables y únicos; evita fallos por variantes de nombre
+# (ej. "South Korea" vs "Korea Republic", "Bosnia-Herzegovina" vs "Bosnia and Herzegovina").
+TEAM_MAP_TLA = {
+    "ARG":"Argentina","ESP":"España","FRA":"Francia","ENG":"Inglaterra",
+    "POR":"Portugal","BRA":"Brasil","NED":"Países Bajos","GER":"Alemania",
+    "MEX":"México","COL":"Colombia","JPN":"Japón","BEL":"Bélgica",
+    "URY":"Uruguay","CRO":"Croacia","SEN":"Senegal","MAR":"Marruecos",
+    "ECU":"Ecuador","AUS":"Australia","KOR":"Corea del Sur","USA":"USA",
+    "SUI":"Suiza","IRN":"Irán","AUT":"Austria","NOR":"Noruega",
+    "CAN":"Canadá","SWE":"Suecia","CIV":"Costa de Marfil","ALG":"Argelia",
+    "CZE":"Rep. Checa","PAN":"Panamá","EGY":"Egipto","QAT":"Qatar",
+    "TUN":"Túnez","RSA":"Sudáfrica","SCO":"Escocia","IRQ":"Iraq",
+    "PAR":"Paraguay","COD":"Congo","UZB":"Uzbekistán","HAI":"Haití",
+    "JOR":"Jordania","NZL":"Nueva Zelanda","GHA":"Ghana","CPV":"Cabo Verde",
+    "KSA":"Arabia","BIH":"Bosnia","CUW":"Curazao","TUR":"Turquía",
+}
+
+# Fallback por nombre, por si algún equipo viniera sin TLA.
+TEAM_MAP_NAME = {
     "Argentina":"Argentina","Spain":"España","France":"Francia","England":"Inglaterra",
     "Portugal":"Portugal","Brazil":"Brasil","Netherlands":"Países Bajos","Germany":"Alemania",
     "Mexico":"México","Colombia":"Colombia","Japan":"Japón","Belgium":"Bélgica",
     "Uruguay":"Uruguay","Croatia":"Croacia","Senegal":"Senegal","Morocco":"Marruecos",
-    "Ecuador":"Ecuador","Australia":"Australia","Korea Republic":"Corea del Sur","USA":"USA",
-    "United States":"USA","Switzerland":"Suiza","Iran":"Irán","Austria":"Austria",
-    "Norway":"Noruega","Canada":"Canadá","Sweden":"Suecia","Ivory Coast":"Costa de Marfil",
-    "Côte d'Ivoire":"Costa de Marfil","Algeria":"Argelia","Czech Republic":"Rep. Checa",
+    "Ecuador":"Ecuador","Australia":"Australia","South Korea":"Corea del Sur",
+    "Korea Republic":"Corea del Sur","United States":"USA","USA":"USA",
+    "Switzerland":"Suiza","Iran":"Irán","Austria":"Austria","Norway":"Noruega",
+    "Canada":"Canadá","Sweden":"Suecia","Ivory Coast":"Costa de Marfil","Algeria":"Argelia",
     "Czechia":"Rep. Checa","Panama":"Panamá","Egypt":"Egipto","Qatar":"Qatar",
     "Tunisia":"Túnez","South Africa":"Sudáfrica","Scotland":"Escocia","Iraq":"Iraq",
-    "Paraguay":"Paraguay","Congo DR":"Congo","DR Congo":"Congo","Uzbekistan":"Uzbekistán",
-    "Haiti":"Haití","Jordan":"Jordania","New Zealand":"Nueva Zelanda","Ghana":"Ghana",
-    "Cape Verde":"Cabo Verde","Saudi Arabia":"Arabia","Bosnia and Herzegovina":"Bosnia",
-    "Bosnia":"Bosnia","Curaçao":"Curazao","Curacao":"Curazao","Turkey":"Turquía",
-    "Türkiye":"Turquía","Serbia":"Serbia",
+    "Paraguay":"Paraguay","Congo DR":"Congo","Uzbekistan":"Uzbekistán","Haiti":"Haití",
+    "Jordan":"Jordania","New Zealand":"Nueva Zelanda","Ghana":"Ghana",
+    "Cape Verde Islands":"Cabo Verde","Saudi Arabia":"Arabia",
+    "Bosnia-Herzegovina":"Bosnia","Curaçao":"Curazao","Turkey":"Turquía",
 }
 
-def map_team(name):
-    return TEAM_MAP.get(name, name)
+def map_team(team):
+    """Recibe el dict del equipo de la API y devuelve el nombre de la quiniela."""
+    tla = team.get("tla")
+    if tla and tla in TEAM_MAP_TLA:
+        return TEAM_MAP_TLA[tla]
+    name = team.get("name", "")
+    return TEAM_MAP_NAME.get(name, name)
 
 def get_tier(team):
     for player, teams in PLAYERS.items():
@@ -90,9 +112,10 @@ def api_get(path):
         return None
 
 def fetch_matches():
+    """Devuelve la lista de partidos, o None si la API falló (error/403/timeout)."""
     data = api_get(f"/competitions/{WC_ID}/matches?status=FINISHED")
-    if not data:
-        return []
+    if data is None:
+        return None  # error real de la API → no tocar el index.html existente
     return data.get("matches", [])
 
 # ─── SCORE CALCULATION ─────────────────────────────────────────────────────────
@@ -123,10 +146,8 @@ def build_scores(matches):
         if not rnd:
             continue
 
-        home_api = m["homeTeam"]["name"]
-        away_api = m["awayTeam"]["name"]
-        home = map_team(home_api)
-        away = map_team(away_api)
+        home = map_team(m["homeTeam"])
+        away = map_team(m["awayTeam"])
 
         score = m.get("score", {})
         ft = score.get("fullTime", {})
@@ -515,9 +536,9 @@ function getOwner(team) {{
 function renderFilterBar() {{
   var fb = document.getElementById('filter-bar');
   if (!fb) return;
-  var html = '<button class="fbtn active" onclick="filterTeams(\'ALL\',this)">Todos</button>';
+  var html = '<button class="fbtn active" onclick="filterTeams(\\'ALL\\',this)">Todos</button>';
   var ps = Object.keys(PLAYERS);
-  for (var i=0;i<ps.length;i++) html += '<button class="fbtn" onclick="filterTeams(\''+ps[i]+'\',this)">'+ps[i]+'</button>';
+  for (var i=0;i<ps.length;i++) html += '<button class="fbtn" onclick="filterTeams(\\''+ps[i]+'\\',this)">'+ps[i]+'</button>';
   fb.innerHTML = html;
 }}
 
@@ -606,6 +627,13 @@ renderToday();
 def main():
     print("Fetching World Cup results...")
     matches = fetch_matches()
+
+    # Si la API falló (None), no regeneramos: conservamos el index.html actual
+    # para no borrar resultados ya cargados con datos vacíos.
+    if matches is None:
+        print("⚠️  La API no respondió correctamente. Se conserva el index.html existente.", file=sys.stderr)
+        sys.exit(0)
+
     print(f"Found {len(matches)} finished matches")
 
     scores, log = build_scores(matches)

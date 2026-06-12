@@ -115,7 +115,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
     <div class="pill">2do lugar: <strong>$2,000</strong></div>
     <div class="pill">8 participantes</div>
   </div>
-  <div class="update-tag" id="update-tag">Actualizado: 11 jun 2026 · 2 partidos</div>
+  <div class="update-tag" id="update-tag">Actualizado: 12 jun 2026 · 3 partidos</div>
 </div>
 
 <div class="nav">
@@ -134,7 +134,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,san
 <div id="hoy" class="section">
   <div class="today-hdr">
     <span class="today-dt" id="today-title"></span>
-    <span class="today-tz">Hora CDMX (UTC−6)</span>
+    <span class="today-tz">Hora CDMX (UTC−5)</span>
   </div>
   <div id="fixtures-list"></div>
 </div>
@@ -203,82 +203,83 @@ var ROUND_LABELS = {groups:'Fase de grupos',qualify16:'Clasifica 16avos',r16win:
 
 var RESULTS = [
   {t1:'México',s1:2,t2:'Sudáfrica',s2:0,round:'groups',date:'11 jun'},
-  {t1:'Corea del Sur',s1:2,t2:'Rep. Checa',s2:1,round:'groups',date:'11 jun'}
+  {t1:'Corea del Sur',s1:2,t2:'Rep. Checa',s2:1,round:'groups',date:'11 jun'},
+  {t1:'Canadá',s1:1,t2:'Bosnia',s2:1,round:'groups',date:'12 jun'}
 ];
 
 var SCHEDULE = [
-  ['2026-06-11','México','Sudáfrica','A','13:00'],
-  ['2026-06-11','Corea del Sur','Rep. Checa','A','20:00'],
-  ['2026-06-12','Canadá','Bosnia','B','13:00'],
-  ['2026-06-12','USA','Paraguay','D','19:00'],
-  ['2026-06-13','Qatar','Suiza','B','13:00'],
-  ['2026-06-13','Brasil','Marruecos','C','16:00'],
-  ['2026-06-13','Haití','Escocia','C','19:00'],
-  ['2026-06-13','Australia','Turquía','D','22:00'],
-  ['2026-06-14','Alemania','Curazao','E','11:00'],
-  ['2026-06-14','Países Bajos','Japón','F','14:00'],
-  ['2026-06-14','Costa de Marfil','Ecuador','E','17:00'],
-  ['2026-06-14','Suecia','Túnez','F','20:00'],
-  ['2026-06-15','España','Cabo Verde','H','10:00'],
-  ['2026-06-15','Bélgica','Egipto','G','13:00'],
-  ['2026-06-15','Arabia Saudita','Uruguay','H','16:00'],
-  ['2026-06-15','Irán','Nueva Zelanda','G','19:00'],
-  ['2026-06-16','Francia','Senegal','I','13:00'],
-  ['2026-06-16','Iraq','Noruega','I','16:00'],
-  ['2026-06-16','Argentina','Argelia','J','19:00'],
-  ['2026-06-16','Austria','Jordania','J','22:00'],
-  ['2026-06-17','Portugal','Uzbekistán','K','11:00'],
-  ['2026-06-17','Inglaterra','Ghana','L','14:00'],
-  ['2026-06-17','Panamá','Croacia','K','17:00'],
-  ['2026-06-17','Colombia','Congo','L','20:00'],
-  ['2026-06-18','Rep. Checa','Sudáfrica','A','10:00'],
-  ['2026-06-18','Suiza','Bosnia','B','13:00'],
-  ['2026-06-18','Canadá','Qatar','B','16:00'],
-  ['2026-06-18','México','Corea del Sur','A','19:00'],
-  ['2026-06-19','USA','Australia','D','13:00'],
-  ['2026-06-19','Escocia','Marruecos','C','16:00'],
-  ['2026-06-19','Brasil','Haití','C','19:00'],
-  ['2026-06-19','Turquía','Paraguay','D','22:00'],
-  ['2026-06-20','Países Bajos','Suecia','F','11:00'],
-  ['2026-06-20','Alemania','Costa de Marfil','E','14:00'],
-  ['2026-06-20','Ecuador','Curazao','E','18:00'],
-  ['2026-06-20','Túnez','Japón','F','22:00'],
-  ['2026-06-21','España','Arabia Saudita','H','10:00'],
-  ['2026-06-21','Bélgica','Irán','G','13:00'],
-  ['2026-06-21','Uruguay','Cabo Verde','H','16:00'],
-  ['2026-06-21','Nueva Zelanda','Egipto','G','19:00'],
-  ['2026-06-22','Argentina','Austria','J','11:00'],
-  ['2026-06-22','Francia','Iraq','I','15:00'],
-  ['2026-06-22','Noruega','Senegal','I','18:00'],
-  ['2026-06-22','Jordania','Argelia','J','21:00'],
-  ['2026-06-23','Portugal','Uzbekistán','K','11:00'],
-  ['2026-06-23','Inglaterra','Ghana','L','14:00'],
-  ['2026-06-23','Panamá','Croacia','K','17:00'],
-  ['2026-06-23','Colombia','Congo','L','20:00'],
-  ['2026-06-24','Suiza','Canadá','B','13:00'],
-  ['2026-06-24','Bosnia','Qatar','B','13:00'],
-  ['2026-06-24','Escocia','Brasil','C','16:00'],
-  ['2026-06-24','Marruecos','Haití','C','16:00'],
-  ['2026-06-24','Rep. Checa','México','A','19:00'],
-  ['2026-06-24','Sudáfrica','Corea del Sur','A','19:00'],
-  ['2026-06-25','Australia','Paraguay','D','13:00'],
-  ['2026-06-25','Turquía','USA','D','13:00'],
-  ['2026-06-25','Ecuador','Alemania','E','16:00'],
-  ['2026-06-25','Curazao','Costa de Marfil','E','16:00'],
-  ['2026-06-26','Japón','Países Bajos','F','13:00'],
-  ['2026-06-26','Túnez','Suecia','F','13:00'],
-  ['2026-06-26','Irán','Bélgica','G','16:00'],
-  ['2026-06-26','Egipto','España','H','16:00'],
-  ['2026-06-26','Nueva Zelanda','Uruguay','H','19:00'],
-  ['2026-06-26','Congo','Bélgica','G','19:00'],
-  ['2026-06-27','Senegal','Francia','I','13:00'],
-  ['2026-06-27','Noruega','Iraq','I','13:00'],
-  ['2026-06-27','Argelia','Argentina','J','16:00'],
-  ['2026-06-27','Jordania','Austria','J','16:00'],
-  ['2026-06-27','Ghana','Panamá','K','19:00'],
-  ['2026-06-27','Uzbekistán','Colombia','K','19:00'],
-  ['2026-06-27','Croacia','Inglaterra','L','22:00'],
-  ['2026-06-27','Congo DR','Uzbekistán','L','22:00']
+  ['2026-06-11','México','Sudáfrica','A','14:00'],
+  ['2026-06-11','Corea del Sur','Rep. Checa','A','21:00'],
+  ['2026-06-12','Canadá','Bosnia','B','14:00'],
+  ['2026-06-12','USA','Paraguay','D','20:00'],
+  ['2026-06-13','Qatar','Suiza','B','14:00'],
+  ['2026-06-13','Brasil','Marruecos','C','17:00'],
+  ['2026-06-13','Haití','Escocia','C','20:00'],
+  ['2026-06-13','Australia','Turquía','D','23:00'],
+  ['2026-06-14','Alemania','Curazao','E','12:00'],
+  ['2026-06-14','Países Bajos','Japón','F','15:00'],
+  ['2026-06-14','Costa de Marfil','Ecuador','E','18:00'],
+  ['2026-06-14','Suecia','Túnez','F','21:00'],
+  ['2026-06-15','España','Cabo Verde','H','11:00'],
+  ['2026-06-15','Bélgica','Egipto','G','14:00'],
+  ['2026-06-15','Arabia Saudita','Uruguay','H','17:00'],
+  ['2026-06-15','Irán','Nueva Zelanda','G','20:00'],
+  ['2026-06-16','Francia','Senegal','I','14:00'],
+  ['2026-06-16','Iraq','Noruega','I','17:00'],
+  ['2026-06-16','Argentina','Argelia','J','20:00'],
+  ['2026-06-16','Austria','Jordania','J','23:00'],
+  ['2026-06-17','Portugal','Uzbekistán','K','12:00'],
+  ['2026-06-17','Inglaterra','Ghana','L','15:00'],
+  ['2026-06-17','Panamá','Croacia','K','18:00'],
+  ['2026-06-17','Colombia','Congo','L','21:00'],
+  ['2026-06-18','Rep. Checa','Sudáfrica','A','11:00'],
+  ['2026-06-18','Suiza','Bosnia','B','14:00'],
+  ['2026-06-18','Canadá','Qatar','B','17:00'],
+  ['2026-06-18','México','Corea del Sur','A','20:00'],
+  ['2026-06-19','USA','Australia','D','14:00'],
+  ['2026-06-19','Escocia','Marruecos','C','17:00'],
+  ['2026-06-19','Brasil','Haití','C','20:00'],
+  ['2026-06-19','Turquía','Paraguay','D','23:00'],
+  ['2026-06-20','Países Bajos','Suecia','F','12:00'],
+  ['2026-06-20','Alemania','Costa de Marfil','E','15:00'],
+  ['2026-06-20','Ecuador','Curazao','E','19:00'],
+  ['2026-06-20','Túnez','Japón','F','23:00'],
+  ['2026-06-21','España','Arabia Saudita','H','11:00'],
+  ['2026-06-21','Bélgica','Irán','G','14:00'],
+  ['2026-06-21','Uruguay','Cabo Verde','H','17:00'],
+  ['2026-06-21','Nueva Zelanda','Egipto','G','20:00'],
+  ['2026-06-22','Argentina','Austria','J','12:00'],
+  ['2026-06-22','Francia','Iraq','I','16:00'],
+  ['2026-06-22','Noruega','Senegal','I','19:00'],
+  ['2026-06-22','Jordania','Argelia','J','22:00'],
+  ['2026-06-23','Portugal','Uzbekistán','K','12:00'],
+  ['2026-06-23','Inglaterra','Ghana','L','15:00'],
+  ['2026-06-23','Panamá','Croacia','K','18:00'],
+  ['2026-06-23','Colombia','Congo','L','21:00'],
+  ['2026-06-24','Suiza','Canadá','B','14:00'],
+  ['2026-06-24','Bosnia','Qatar','B','14:00'],
+  ['2026-06-24','Escocia','Brasil','C','17:00'],
+  ['2026-06-24','Marruecos','Haití','C','17:00'],
+  ['2026-06-24','Rep. Checa','México','A','20:00'],
+  ['2026-06-24','Sudáfrica','Corea del Sur','A','20:00'],
+  ['2026-06-25','Australia','Paraguay','D','14:00'],
+  ['2026-06-25','Turquía','USA','D','14:00'],
+  ['2026-06-25','Ecuador','Alemania','E','17:00'],
+  ['2026-06-25','Curazao','Costa de Marfil','E','17:00'],
+  ['2026-06-26','Japón','Países Bajos','F','14:00'],
+  ['2026-06-26','Túnez','Suecia','F','14:00'],
+  ['2026-06-26','Irán','Bélgica','G','17:00'],
+  ['2026-06-26','Egipto','España','H','17:00'],
+  ['2026-06-26','Nueva Zelanda','Uruguay','H','20:00'],
+  ['2026-06-26','Congo','Bélgica','G','20:00'],
+  ['2026-06-27','Senegal','Francia','I','14:00'],
+  ['2026-06-27','Noruega','Iraq','I','14:00'],
+  ['2026-06-27','Argelia','Argentina','J','17:00'],
+  ['2026-06-27','Jordania','Austria','J','17:00'],
+  ['2026-06-27','Ghana','Panamá','K','20:00'],
+  ['2026-06-27','Uzbekistán','Colombia','K','20:00'],
+  ['2026-06-27','Croacia','Inglaterra','L','23:00'],
+  ['2026-06-27','Congo DR','Uzbekistán','L','23:00']
 ];
 
 function getTier(team) {
@@ -450,7 +451,7 @@ tl.innerHTML = tlHtml;
 // Render partidos del día
 function renderToday() {
   var now = new Date();
-  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-6*60)) * 60000;
+  var cdmxMs = now.getTime() + (now.getTimezoneOffset() + (-5*60)) * 60000;
   var cn = new Date(cdmxMs);
   var yy=cn.getFullYear();
   var mm2 = (cn.getMonth()+1 < 10 ? '0' : '') + (cn.getMonth()+1);

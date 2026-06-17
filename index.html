@@ -464,44 +464,7 @@ var MULT = {"T1": 1.0, "T2": 1.25, "T3": 1.5, "T4": 2.0, "T5": 3.0, "T6": 4.0};
 var SCORES = {"México": 3, "Sudáfrica": 0, "Corea del Sur": 3, "Rep. Checa": 0, "Canadá": 1, "Bosnia": 1, "USA": 3, "Paraguay": 0, "Qatar": 1, "Suiza": 1, "Brasil": 1, "Marruecos": 1, "Haití": 0, "Escocia": 3, "Australia": 3, "Turquía": 0, "Alemania": 3, "Curazao": 0, "Países Bajos": 1, "Japón": 1, "Costa de Marfil": 3, "Ecuador": 0, "Suecia": 3, "Túnez": 0, "España": 1, "Cabo Verde": 1, "Bélgica": 1, "Egipto": 1, "Arabia": 1, "Uruguay": 1, "Irán": 1, "Nueva Zelanda": 1, "Francia": 3, "Senegal": 0, "Iraq": 0, "Noruega": 3, "Argentina": 3, "Argelia": 0, "Austria": 3, "Jordania": 0};
 var TOTALS = {"LIMON": 15.75, "BRUNO": 11.5, "RAMI": 14.75, "FIRE": 24.75, "ALEX": 6.75, "JORGE": 5.0, "BOB": 2.5, "ALFARO": 10.75};
 var SORTED = [["FIRE", 24.75], ["LIMON", 15.75], ["RAMI", 14.75], ["BRUNO", 11.5], ["ALFARO", 10.75], ["ALEX", 6.75], ["JORGE", 5.0], ["BOB", 2.5]];
-var SCHEDULE = [
-    ['2026-06-11','México','Sudáfrica','A','13:00'],['2026-06-11','Corea del Sur','Rep. Checa','A','20:00'],
-    ['2026-06-12','Canadá','Bosnia','B','13:00'],['2026-06-12','USA','Paraguay','D','19:00'],
-    ['2026-06-13','Qatar','Suiza','B','13:00'],['2026-06-13','Brasil','Marruecos','C','16:00'],
-    ['2026-06-13','Haití','Escocia','C','19:00'],['2026-06-13','Australia','Turquía','D','22:00'],
-    ['2026-06-14','Alemania','Curazao','E','11:00'],['2026-06-14','Países Bajos','Japón','F','14:00'],
-    ['2026-06-14','Costa de Marfil','Ecuador','E','17:00'],['2026-06-14','Suecia','Túnez','F','20:00'],
-    ['2026-06-15','España','Cabo Verde','H','10:00'],['2026-06-15','Bélgica','Egipto','G','13:00'],
-    ['2026-06-15','Arabia','Uruguay','H','16:00'],['2026-06-15','Irán','Nueva Zelanda','G','19:00'],
-    ['2026-06-16','Francia','Senegal','I','13:00'],['2026-06-16','Iraq','Noruega','I','16:00'],
-    ['2026-06-16','Argentina','Argelia','J','19:00'],['2026-06-16','Austria','Jordania','J','22:00'],
-    ['2026-06-17','Portugal','Uzbekistán','K','11:00'],['2026-06-17','Inglaterra','Ghana','L','14:00'],
-    ['2026-06-17','Panamá','Croacia','K','17:00'],['2026-06-17','Colombia','Congo','L','20:00'],
-    ['2026-06-18','Rep. Checa','Sudáfrica','A','10:00'],['2026-06-18','Suiza','Bosnia','B','13:00'],
-    ['2026-06-18','Canadá','Qatar','B','16:00'],['2026-06-18','México','Corea del Sur','A','19:00'],
-    ['2026-06-19','USA','Australia','D','13:00'],['2026-06-19','Escocia','Marruecos','C','16:00'],
-    ['2026-06-19','Brasil','Haití','C','19:00'],['2026-06-19','Turquía','Paraguay','D','22:00'],
-    ['2026-06-20','Países Bajos','Suecia','F','11:00'],['2026-06-20','Alemania','Costa de Marfil','E','14:00'],
-    ['2026-06-20','Ecuador','Curazao','E','18:00'],['2026-06-20','Túnez','Japón','F','22:00'],
-    ['2026-06-21','España','Arabia','H','10:00'],['2026-06-21','Bélgica','Irán','G','13:00'],
-    ['2026-06-21','Uruguay','Cabo Verde','H','16:00'],['2026-06-21','Nueva Zelanda','Egipto','G','19:00'],
-    ['2026-06-22','Argentina','Austria','J','11:00'],['2026-06-22','Francia','Iraq','I','15:00'],
-    ['2026-06-22','Noruega','Senegal','I','18:00'],['2026-06-22','Jordania','Argelia','J','21:00'],
-    ['2026-06-23','Portugal','Uzbekistán','K','11:00'],['2026-06-23','Inglaterra','Ghana','L','14:00'],
-    ['2026-06-23','Panamá','Croacia','K','17:00'],['2026-06-23','Colombia','Congo','L','20:00'],
-    ['2026-06-24','Suiza','Canadá','B','13:00'],['2026-06-24','Bosnia','Qatar','B','13:00'],
-    ['2026-06-24','Escocia','Brasil','C','16:00'],['2026-06-24','Marruecos','Haití','C','16:00'],
-    ['2026-06-24','Rep. Checa','México','A','19:00'],['2026-06-24','Sudáfrica','Corea del Sur','A','19:00'],
-    ['2026-06-25','Australia','Paraguay','D','13:00'],['2026-06-25','Turquía','USA','D','13:00'],
-    ['2026-06-25','Ecuador','Alemania','E','16:00'],['2026-06-25','Curazao','Costa de Marfil','E','16:00'],
-    ['2026-06-26','Japón','Países Bajos','F','13:00'],['2026-06-26','Túnez','Suecia','F','13:00'],
-    ['2026-06-26','Irán','Bélgica','G','16:00'],['2026-06-26','Egipto','España','H','16:00'],
-    ['2026-06-26','Nueva Zelanda','Uruguay','H','19:00'],['2026-06-26','Congo','Bélgica','G','19:00'],
-    ['2026-06-27','Senegal','Francia','I','13:00'],['2026-06-27','Noruega','Iraq','I','13:00'],
-    ['2026-06-27','Argelia','Argentina','J','16:00'],['2026-06-27','Jordania','Austria','J','16:00'],
-    ['2026-06-27','Ghana','Panamá','K','19:00'],['2026-06-27','Uzbekistán','Colombia','K','19:00'],
-    ['2026-06-27','Croacia','Inglaterra','L','22:00'],['2026-06-27','Congo','Uzbekistán','L','22:00']
-  ];
+var SCHEDULE = [["2026-06-11", "México", "Sudáfrica", "A", "13:00"], ["2026-06-11", "Corea del Sur", "Rep. Checa", "A", "20:00"], ["2026-06-12", "Canadá", "Bosnia", "B", "13:00"], ["2026-06-12", "USA", "Paraguay", "D", "19:00"], ["2026-06-13", "Qatar", "Suiza", "B", "13:00"], ["2026-06-13", "Brasil", "Marruecos", "C", "16:00"], ["2026-06-13", "Haití", "Escocia", "C", "19:00"], ["2026-06-13", "Australia", "Turquía", "D", "22:00"], ["2026-06-14", "Alemania", "Curazao", "E", "11:00"], ["2026-06-14", "Países Bajos", "Japón", "F", "14:00"], ["2026-06-14", "Costa de Marfil", "Ecuador", "E", "17:00"], ["2026-06-14", "Suecia", "Túnez", "F", "20:00"], ["2026-06-15", "España", "Cabo Verde", "H", "10:00"], ["2026-06-15", "Bélgica", "Egipto", "G", "13:00"], ["2026-06-15", "Arabia", "Uruguay", "H", "16:00"], ["2026-06-15", "Irán", "Nueva Zelanda", "G", "19:00"], ["2026-06-16", "Francia", "Senegal", "I", "13:00"], ["2026-06-16", "Iraq", "Noruega", "I", "16:00"], ["2026-06-16", "Argentina", "Argelia", "J", "19:00"], ["2026-06-16", "Austria", "Jordania", "J", "22:00"], ["2026-06-17", "Portugal", "Congo", "K", "11:00"], ["2026-06-17", "Inglaterra", "Croacia", "L", "14:00"], ["2026-06-17", "Ghana", "Panamá", "L", "17:00"], ["2026-06-17", "Uzbekistán", "Colombia", "K", "20:00"], ["2026-06-18", "Rep. Checa", "Sudáfrica", "A", "10:00"], ["2026-06-18", "Suiza", "Bosnia", "B", "13:00"], ["2026-06-18", "Canadá", "Qatar", "B", "16:00"], ["2026-06-18", "México", "Corea del Sur", "A", "19:00"], ["2026-06-19", "USA", "Australia", "D", "13:00"], ["2026-06-19", "Escocia", "Marruecos", "C", "16:00"], ["2026-06-19", "Brasil", "Haití", "C", "18:30"], ["2026-06-19", "Turquía", "Paraguay", "D", "21:00"], ["2026-06-20", "Países Bajos", "Suecia", "F", "11:00"], ["2026-06-20", "Alemania", "Costa de Marfil", "E", "14:00"], ["2026-06-20", "Ecuador", "Curazao", "E", "18:00"], ["2026-06-20", "Túnez", "Japón", "F", "22:00"], ["2026-06-21", "España", "Arabia", "H", "10:00"], ["2026-06-21", "Bélgica", "Irán", "G", "13:00"], ["2026-06-21", "Uruguay", "Cabo Verde", "H", "16:00"], ["2026-06-21", "Nueva Zelanda", "Egipto", "G", "19:00"], ["2026-06-22", "Argentina", "Austria", "J", "11:00"], ["2026-06-22", "Francia", "Iraq", "I", "15:00"], ["2026-06-22", "Noruega", "Senegal", "I", "18:00"], ["2026-06-22", "Jordania", "Argelia", "J", "21:00"], ["2026-06-23", "Portugal", "Uzbekistán", "K", "11:00"], ["2026-06-23", "Inglaterra", "Ghana", "L", "14:00"], ["2026-06-23", "Panamá", "Croacia", "L", "17:00"], ["2026-06-23", "Colombia", "Congo", "K", "20:00"], ["2026-06-24", "Suiza", "Canadá", "B", "13:00"], ["2026-06-24", "Bosnia", "Qatar", "B", "13:00"], ["2026-06-24", "Marruecos", "Haití", "C", "16:00"], ["2026-06-24", "Escocia", "Brasil", "C", "16:00"], ["2026-06-24", "Rep. Checa", "México", "A", "19:00"], ["2026-06-24", "Sudáfrica", "Corea del Sur", "A", "19:00"], ["2026-06-25", "Ecuador", "Alemania", "E", "14:00"], ["2026-06-25", "Curazao", "Costa de Marfil", "E", "14:00"], ["2026-06-25", "Túnez", "Países Bajos", "F", "17:00"], ["2026-06-25", "Japón", "Suecia", "F", "17:00"], ["2026-06-25", "Turquía", "USA", "D", "20:00"], ["2026-06-25", "Paraguay", "Australia", "D", "20:00"], ["2026-06-26", "Noruega", "Francia", "I", "13:00"], ["2026-06-26", "Senegal", "Iraq", "I", "13:00"], ["2026-06-26", "Uruguay", "España", "H", "18:00"], ["2026-06-26", "Cabo Verde", "Arabia", "H", "18:00"], ["2026-06-26", "Nueva Zelanda", "Bélgica", "G", "21:00"], ["2026-06-26", "Egipto", "Irán", "G", "21:00"], ["2026-06-27", "Panamá", "Inglaterra", "L", "15:00"], ["2026-06-27", "Croacia", "Ghana", "L", "15:00"], ["2026-06-27", "Colombia", "Portugal", "K", "17:30"], ["2026-06-27", "Congo", "Uzbekistán", "K", "17:30"], ["2026-06-27", "Jordania", "Argentina", "J", "20:00"], ["2026-06-27", "Argelia", "Austria", "J", "20:00"]];
 
 function getOwner(team) {
   var ps = Object.keys(PLAYERS);

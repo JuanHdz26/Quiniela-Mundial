@@ -40,7 +40,7 @@ TEAM_MAP_TLA = {
     "ARG":"Argentina","ESP":"España","FRA":"Francia","ENG":"Inglaterra",
     "POR":"Portugal","BRA":"Brasil","NED":"Países Bajos","GER":"Alemania",
     "MEX":"México","COL":"Colombia","JPN":"Japón","BEL":"Bélgica",
-    "URY":"Uruguay","CRO":"Croacia","SEN":"Senegal","MAR":"Marruecos",
+    "URY":"Uruguay","URU":"Uruguay","CRO":"Croacia","SEN":"Senegal","MAR":"Marruecos",
     "ECU":"Ecuador","AUS":"Australia","KOR":"Corea del Sur","USA":"USA",
     "SUI":"Suiza","IRN":"Irán","AUT":"Austria","NOR":"Noruega",
     "CAN":"Canadá","SWE":"Suecia","CIV":"Costa de Marfil","ALG":"Argelia",
@@ -112,11 +112,37 @@ def api_get(path):
         return None
 
 def fetch_matches():
-    """Devuelve la lista de partidos, o None si la API falló (error/403/timeout)."""
-    data = api_get(f"/competitions/{WC_ID}/matches?status=FINISHED")
+    """Devuelve TODOS los partidos del torneo, o None si la API falló.
+    De aquí se derivan tanto los resultados (finalizados) como el calendario."""
+    data = api_get(f"/competitions/{WC_ID}/matches")
     if data is None:
         return None  # error real de la API → no tocar el index.html existente
     return data.get("matches", [])
+
+def build_schedule(matches):
+    """Construye el calendario de fase de grupos desde la API, en hora CDMX.
+    Siempre refleja el fixture real (fechas, horas, grupos, reprogramaciones)."""
+    rows = []
+    for m in matches:
+        if m.get("stage") != "GROUP_STAGE":
+            continue  # los knockouts tienen equipos TBD hasta que se definen
+        home = m.get("homeTeam") or {}
+        away = m.get("awayTeam") or {}
+        if not home.get("name") or not away.get("name"):
+            continue
+        try:
+            dt = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(CDMX)
+        except Exception:
+            continue
+        rows.append([
+            dt.strftime("%Y-%m-%d"),
+            map_team(home),
+            map_team(away),
+            (m.get("group") or "").replace("GROUP_", ""),
+            dt.strftime("%H:%M"),
+        ])
+    rows.sort(key=lambda r: (r[0], r[4]))
+    return rows
 
 def fetch_scorers():
     """Top goleadores del torneo. Devuelve [] si la API falla (no es crítico)."""
@@ -244,7 +270,7 @@ def compute_totals(scores):
     return totals
 
 # ─── HTML GENERATION ───────────────────────────────────────────────────────────
-def generate_html(scores, log, totals, match_count, updated_str, scorers=None):
+def generate_html(scores, log, totals, match_count, updated_str, scorers=None, schedule=None):
     sorted_players = sorted(totals.items(), key=lambda x: x[1], reverse=True)
     max_pts = sorted_players[0][1] if sorted_players else 1
 
@@ -334,45 +360,8 @@ def generate_html(scores, log, totals, match_count, updated_str, scorers=None):
       <div class="sc-info"><div class="sc-name">{name}</div><div class="sc-team">{team_line}</div></div>
     </div>'''
 
-    # Schedule JS array (group stage only — knockout TBD)
-    schedule_js = """var SCHEDULE = [
-    ['2026-06-11','México','Sudáfrica','A','13:00'],['2026-06-11','Corea del Sur','Rep. Checa','A','20:00'],
-    ['2026-06-12','Canadá','Bosnia','B','13:00'],['2026-06-12','USA','Paraguay','D','19:00'],
-    ['2026-06-13','Qatar','Suiza','B','13:00'],['2026-06-13','Brasil','Marruecos','C','16:00'],
-    ['2026-06-13','Haití','Escocia','C','19:00'],['2026-06-13','Australia','Turquía','D','22:00'],
-    ['2026-06-14','Alemania','Curazao','E','11:00'],['2026-06-14','Países Bajos','Japón','F','14:00'],
-    ['2026-06-14','Costa de Marfil','Ecuador','E','17:00'],['2026-06-14','Suecia','Túnez','F','20:00'],
-    ['2026-06-15','España','Cabo Verde','H','10:00'],['2026-06-15','Bélgica','Egipto','G','13:00'],
-    ['2026-06-15','Arabia','Uruguay','H','16:00'],['2026-06-15','Irán','Nueva Zelanda','G','19:00'],
-    ['2026-06-16','Francia','Senegal','I','13:00'],['2026-06-16','Iraq','Noruega','I','16:00'],
-    ['2026-06-16','Argentina','Argelia','J','19:00'],['2026-06-16','Austria','Jordania','J','22:00'],
-    ['2026-06-17','Portugal','Uzbekistán','K','11:00'],['2026-06-17','Inglaterra','Ghana','L','14:00'],
-    ['2026-06-17','Panamá','Croacia','K','17:00'],['2026-06-17','Colombia','Congo','L','20:00'],
-    ['2026-06-18','Rep. Checa','Sudáfrica','A','10:00'],['2026-06-18','Suiza','Bosnia','B','13:00'],
-    ['2026-06-18','Canadá','Qatar','B','16:00'],['2026-06-18','México','Corea del Sur','A','19:00'],
-    ['2026-06-19','USA','Australia','D','13:00'],['2026-06-19','Escocia','Marruecos','C','16:00'],
-    ['2026-06-19','Brasil','Haití','C','19:00'],['2026-06-19','Turquía','Paraguay','D','22:00'],
-    ['2026-06-20','Países Bajos','Suecia','F','11:00'],['2026-06-20','Alemania','Costa de Marfil','E','14:00'],
-    ['2026-06-20','Ecuador','Curazao','E','18:00'],['2026-06-20','Túnez','Japón','F','22:00'],
-    ['2026-06-21','España','Arabia','H','10:00'],['2026-06-21','Bélgica','Irán','G','13:00'],
-    ['2026-06-21','Uruguay','Cabo Verde','H','16:00'],['2026-06-21','Nueva Zelanda','Egipto','G','19:00'],
-    ['2026-06-22','Argentina','Austria','J','11:00'],['2026-06-22','Francia','Iraq','I','15:00'],
-    ['2026-06-22','Noruega','Senegal','I','18:00'],['2026-06-22','Jordania','Argelia','J','21:00'],
-    ['2026-06-23','Portugal','Uzbekistán','K','11:00'],['2026-06-23','Inglaterra','Ghana','L','14:00'],
-    ['2026-06-23','Panamá','Croacia','K','17:00'],['2026-06-23','Colombia','Congo','L','20:00'],
-    ['2026-06-24','Suiza','Canadá','B','13:00'],['2026-06-24','Bosnia','Qatar','B','13:00'],
-    ['2026-06-24','Escocia','Brasil','C','16:00'],['2026-06-24','Marruecos','Haití','C','16:00'],
-    ['2026-06-24','Rep. Checa','México','A','19:00'],['2026-06-24','Sudáfrica','Corea del Sur','A','19:00'],
-    ['2026-06-25','Australia','Paraguay','D','13:00'],['2026-06-25','Turquía','USA','D','13:00'],
-    ['2026-06-25','Ecuador','Alemania','E','16:00'],['2026-06-25','Curazao','Costa de Marfil','E','16:00'],
-    ['2026-06-26','Japón','Países Bajos','F','13:00'],['2026-06-26','Túnez','Suecia','F','13:00'],
-    ['2026-06-26','Irán','Bélgica','G','16:00'],['2026-06-26','Egipto','España','H','16:00'],
-    ['2026-06-26','Nueva Zelanda','Uruguay','H','19:00'],['2026-06-26','Congo','Bélgica','G','19:00'],
-    ['2026-06-27','Senegal','Francia','I','13:00'],['2026-06-27','Noruega','Iraq','I','13:00'],
-    ['2026-06-27','Argelia','Argentina','J','16:00'],['2026-06-27','Jordania','Austria','J','16:00'],
-    ['2026-06-27','Ghana','Panamá','K','19:00'],['2026-06-27','Uzbekistán','Colombia','K','19:00'],
-    ['2026-06-27','Croacia','Inglaterra','L','22:00'],['2026-06-27','Congo','Uzbekistán','L','22:00']
-  ];"""
+    # Schedule JS array — generado desde la API (siempre refleja el fixture real)
+    schedule_js = "var SCHEDULE = " + json.dumps(schedule or [], ensure_ascii=False) + ";"
 
     players_js = "var PLAYERS = " + json.dumps(PLAYERS, ensure_ascii=False) + ";"
     mult_js = "var MULT = " + json.dumps(MULT) + ";"
@@ -686,10 +675,16 @@ def main():
         print("⚠️  La API no respondió correctamente. Se conserva el index.html existente.", file=sys.stderr)
         sys.exit(0)
 
-    print(f"Found {len(matches)} finished matches")
+    print(f"Found {len(matches)} matches total")
 
-    scores, log = build_scores(matches)
+    finished = [m for m in matches if m.get("status") == "FINISHED"]
+    print(f"  {len(finished)} finished")
+
+    scores, log = build_scores(finished)
     totals = compute_totals(scores)
+
+    schedule = build_schedule(matches)
+    print(f"Built schedule with {len(schedule)} group-stage fixtures")
 
     scorers = fetch_scorers()
     print(f"Found {len(scorers)} scorers")
@@ -698,7 +693,7 @@ def main():
     months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
     updated_str = f"Actualizado: {now_cdmx.day} {months[now_cdmx.month-1]} {now_cdmx.year}"
 
-    html = generate_html(scores, log, totals, len(log), updated_str, scorers)
+    html = generate_html(scores, log, totals, len(log), updated_str, scorers, schedule)
 
     out_path = os.path.join(os.path.dirname(__file__), "index.html")
     with open(out_path, "w", encoding="utf-8") as f:

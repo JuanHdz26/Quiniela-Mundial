@@ -119,26 +119,40 @@ def fetch_matches():
         return None  # error real de la API → no tocar el index.html existente
     return data.get("matches", [])
 
+# Etiqueta de ronda para el calendario (los knockouts no tienen "grupo")
+STAGE_META = {
+    "LAST_32": "16avos",
+    "LAST_16": "Octavos",
+    "QUARTER_FINALS": "Cuartos",
+    "SEMI_FINALS": "Semifinal",
+    "THIRD_PLACE": "3er lugar",
+    "FINAL": "Final",
+}
+
 def build_schedule(matches):
-    """Construye el calendario de fase de grupos desde la API, en hora CDMX.
-    Siempre refleja el fixture real (fechas, horas, grupos, reprogramaciones)."""
+    """Construye el calendario desde la API, en hora CDMX. Incluye fase de grupos
+    y knockouts en cuanto ambos equipos están definidos. Siempre refleja el fixture
+    real (fechas, horas, rondas, reprogramaciones)."""
     rows = []
     for m in matches:
-        if m.get("stage") != "GROUP_STAGE":
-            continue  # los knockouts tienen equipos TBD hasta que se definen
         home = m.get("homeTeam") or {}
         away = m.get("awayTeam") or {}
         if not home.get("name") or not away.get("name"):
-            continue
+            continue  # knockouts con equipos TBD aún no se muestran
         try:
             dt = datetime.fromisoformat(m["utcDate"].replace("Z", "+00:00")).astimezone(CDMX)
         except Exception:
             continue
+        stage = m.get("stage", "")
+        if stage == "GROUP_STAGE":
+            meta = "Grupo " + (m.get("group") or "").replace("GROUP_", "")
+        else:
+            meta = STAGE_META.get(stage, stage.replace("_", " ").title())
         rows.append([
             dt.strftime("%Y-%m-%d"),
             map_team(home),
             map_team(away),
-            (m.get("group") or "").replace("GROUP_", ""),
+            meta,
             dt.strftime("%H:%M"),
         ])
     rows.sort(key=lambda r: (r[0], r[4]))
@@ -152,104 +166,124 @@ def fetch_scorers():
     return data.get("scorers", [])
 
 # ─── SCORE CALCULATION ─────────────────────────────────────────────────────────
+# Mapeo stage de la API → ronda interna. OJO: el Mundial 2026 es de 48 equipos,
+# así que LAST_32 (Ronda de 32) son los "16avos"; LAST_16 son octavos, etc.
+STAGE_ROUND = {
+    "GROUP_STAGE": "groups",
+    "LAST_32": "r32",   # 16avos
+    "LAST_16": "r16",   # octavos
+    "QUARTER_FINALS": "qf",  # cuartos
+    "SEMI_FINALS": "sf",     # semifinal
+    "FINAL": "final",
+    # THIRD_PLACE → None (la quiniela no otorga puntos por 3er lugar)
+}
+
 def determine_round(match):
-    stage = match.get("stage", "")
-    if stage == "GROUP_STAGE":
-        return "groups"
-    elif stage == "LAST_16":
-        return "r16win"
-    elif stage == "QUARTER_FINALS":
-        return "qfwin"
-    elif stage == "SEMI_FINALS":
-        return "sfwin"
-    elif stage == "FINAL":
-        return "final"
-    return None
+    return STAGE_ROUND.get(match.get("stage", ""))
+
+def match_winner(home, away, score):
+    """Ganador del partido. En knockouts puede definirse por penales → usa score.winner."""
+    wf = score.get("winner")
+    if wf == "HOME_TEAM":
+        return home
+    if wf == "AWAY_TEAM":
+        return away
+    ft = score.get("fullTime", {})
+    hg, ag = ft.get("home"), ft.get("away")
+    if hg is None or ag is None:
+        return None
+    return home if hg > ag else away if ag > hg else None
 
 def build_scores(matches):
     scores = {}       # team -> raw points
     log = []          # list of match dicts for display
-    qualified = set() # teams that qualified to R16 (given 5pts)
+    qualified = set() # equipos que clasificaron a 16avos (5 pts c/u)
+    months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
 
-    # Sort by date
-    matches = sorted(matches, key=lambda m: m.get("utcDate",""))
+    def add(team, pts):
+        scores[team] = scores.get(team, 0) + pts
 
+    # 1) Bono "clasifica 16avos" (5 pts) a TODO equipo presente en la Ronda de 32,
+    #    aunque su partido aún no se juegue: por estar en el bracket ya clasificaron.
     for m in matches:
+        if m.get("stage") != "LAST_32":
+            continue
+        for side in ("homeTeam", "awayTeam"):
+            t = m.get(side) or {}
+            if not t.get("name"):
+                continue
+            team = map_team(t)
+            if team not in qualified:
+                qualified.add(team)
+                add(team, 5)
+
+    # 2) Puntos por resultados de partidos FINALIZADOS
+    finished = sorted(
+        [m for m in matches if m.get("status") == "FINISHED"],
+        key=lambda m: m.get("utcDate", "")
+    )
+    for m in finished:
         rnd = determine_round(m)
         if not rnd:
             continue
 
         home = map_team(m["homeTeam"])
         away = map_team(m["awayTeam"])
-
         score = m.get("score", {})
         ft = score.get("fullTime", {})
-        home_g = ft.get("home")
-        away_g = ft.get("away")
-
+        home_g, away_g = ft.get("home"), ft.get("away")
         if home_g is None or away_g is None:
             continue
-
-        if home not in scores: scores[home] = 0
-        if away not in scores: scores[away] = 0
+        winner = match_winner(home, away, score)
 
         entries = []
-        date_str = m.get("utcDate","")[:10]
-        # Convert to CDMX date display
+        date_str = m.get("utcDate", "")[:10]
         try:
             dt = datetime.fromisoformat(date_str)
-            months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"]
             display_date = f"{dt.day} {months[dt.month-1]}"
-        except:
+        except Exception:
             display_date = date_str
 
         if rnd == "groups":
-            if home_g > away_g:
-                scores[home] += 3
-                entries.append({"team": home, "pts": 3, "label": "victoria"})
-            elif away_g > home_g:
-                scores[away] += 3
-                entries.append({"team": away, "pts": 3, "label": "victoria"})
+            if winner:
+                add(winner, 3)
+                entries.append({"team": winner, "pts": 3, "label": "victoria"})
             else:
-                scores[home] += 1
-                scores[away] += 1
+                add(home, 1); add(away, 1)
                 entries.append({"team": home, "pts": 1, "label": "empate"})
                 entries.append({"team": away, "pts": 1, "label": "empate"})
 
-        elif rnd == "r16win":
-            # Award qualify16 bonus first (only once per team)
-            for team in [home, away]:
-                if team not in qualified:
-                    qualified.add(team)
-                    if team not in scores: scores[team] = 0
-                    scores[team] += 5
-                    entries.append({"team": team, "pts": 5, "label": "clasifica 16avos"})
-            # Winner
-            winner = home if home_g > away_g else away if away_g > home_g else None
+        elif rnd == "r32":
+            # El bono de 5 ya se sumó arriba; aquí solo se muestra en el historial
+            # y se añade la victoria de 8.
+            entries.append({"team": home, "pts": 5, "label": "clasifica 16avos"})
+            entries.append({"team": away, "pts": 5, "label": "clasifica 16avos"})
             if winner:
-                scores[winner] += 8
+                add(winner, 8)
                 entries.append({"team": winner, "pts": 8, "label": "gana 16avos"})
 
-        elif rnd == "qfwin":
-            winner = home if home_g > away_g else away if away_g > home_g else None
+        elif rnd == "r16":
             if winner:
-                scores[winner] += 12
+                add(winner, 12)
                 entries.append({"team": winner, "pts": 12, "label": "gana octavos"})
 
-        elif rnd == "sfwin":
-            winner = home if home_g > away_g else away if away_g > home_g else None
+        elif rnd == "qf":
             if winner:
-                scores[winner] += 20
+                add(winner, 20)
                 entries.append({"team": winner, "pts": 20, "label": "gana cuartos"})
 
+        elif rnd == "sf":
+            if winner:
+                add(winner, 30)
+                entries.append({"team": winner, "pts": 30, "label": "gana semifinal"})
+
         elif rnd == "final":
-            winner = home if home_g > away_g else away if away_g > home_g else None
             loser = away if winner == home else home if winner else None
             if winner:
-                scores[winner] += 50
+                add(winner, 50)
                 entries.append({"team": winner, "pts": 50, "label": "campeón"})
             if loser:
-                scores[loser] += 20
+                add(loser, 20)
                 entries.append({"team": loser, "pts": 20, "label": "subcampeón"})
 
         if entries:
@@ -306,8 +340,8 @@ def generate_html(scores, log, totals, match_count, updated_str, scorers=None, s
 
     # Historial HTML
     ROUND_LABELS = {
-        "groups":"Fase de grupos","qualify16":"Clasifica 16avos","r16win":"16avos",
-        "qfwin":"Octavos","sfwin":"Cuartos","sfwin2":"Semifinal","final":"Final"
+        "groups":"Fase de grupos","r32":"16avos","r16":"Octavos",
+        "qf":"Cuartos","sf":"Semifinal","final":"Final"
     }
     hist_html = ""
     if not log:
@@ -629,7 +663,7 @@ function renderToday() {{
     if (k===0) label = 'Hoy · '+label;
     html += '<div class="day-group">'+label+'</div>';
     for (var fi=0;fi<dayMatches.length;fi++) {{
-      var fx=dayMatches[fi], ft1=fx[1], ft2=fx[2], fgrp=fx[3], ftime=fx[4];
+      var fx=dayMatches[fi], ft1=fx[1], ft2=fx[2], fmeta=fx[3], ftime=fx[4];
       var sClass='',sLabel='',cClass='';
       if (k===0) {{
         var fh=parseInt(ftime.split(':')[0]), fm2=parseInt(ftime.split(':')[1]);
@@ -642,7 +676,7 @@ function renderToday() {{
       var badges='';
       if (o1) badges+='<span class="fbadge" style="background:rgba(0,200,122,.12);color:#4ddfaa">'+o1+' — '+ft1+'</span> ';
       if (o2) badges+='<span class="fbadge" style="background:rgba(124,111,247,.12);color:#a99fff">'+o2+' — '+ft2+'</span>';
-      html+='<div class="fix-card '+cClass+'"><div class="fix-time"><div class="fix-hour">'+ftime+'</div>'+(sLabel?'<div class="fix-status '+sClass+'">'+sLabel+'</div>':'')+'</div><div><div class="fix-matchup">'+ft1+' <span class="fix-vs">vs</span> '+ft2+'</div><div class="fix-meta">Grupo '+fgrp+'</div>'+(badges?'<div class="fix-badges">'+badges+'</div>':'')+'</div></div>';
+      html+='<div class="fix-card '+cClass+'"><div class="fix-time"><div class="fix-hour">'+ftime+'</div>'+(sLabel?'<div class="fix-status '+sClass+'">'+sLabel+'</div>':'')+'</div><div><div class="fix-matchup">'+ft1+' <span class="fix-vs">vs</span> '+ft2+'</div><div class="fix-meta">'+fmeta+'</div>'+(badges?'<div class="fix-badges">'+badges+'</div>':'')+'</div></div>';
     }}
   }}
   if (!total) {{ fc.innerHTML='<div class="no-matches"><div style="font-size:32px;margin-bottom:10px">📅</div>No hay partidos en los próximos 3 días.</div>'; return; }}
@@ -676,15 +710,16 @@ def main():
         sys.exit(0)
 
     print(f"Found {len(matches)} matches total")
+    finished_count = sum(1 for m in matches if m.get("status") == "FINISHED")
+    print(f"  {finished_count} finished")
 
-    finished = [m for m in matches if m.get("status") == "FINISHED"]
-    print(f"  {len(finished)} finished")
-
-    scores, log = build_scores(finished)
+    # build_scores recibe TODOS los partidos: filtra finalizados para puntos de
+    # resultados, y usa el bracket de LAST_32 para el bono de clasificación.
+    scores, log = build_scores(matches)
     totals = compute_totals(scores)
 
     schedule = build_schedule(matches)
-    print(f"Built schedule with {len(schedule)} group-stage fixtures")
+    print(f"Built schedule with {len(schedule)} fixtures")
 
     scorers = fetch_scorers()
     print(f"Found {len(scorers)} scorers")

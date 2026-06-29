@@ -2,8 +2,11 @@ name: Actualizar Quiniela
 
 on:
   schedule:
-    # 11 PM CDMX = 05:00 UTC (CDMX es UTC-6 permanente)
-    - cron: '0 5 * * *'
+    # Cada 15 min durante el horario de partidos, para actualizar poco después
+    # de que termina cada juego. Ventana ~10:00–01:00 CDMX = 16:00–07:00 UTC
+    # (CDMX es UTC-6 permanente). El script solo hace commit si hay cambios,
+    # así que en horas/días sin resultados no genera commits.
+    - cron: '*/15 16-23,0-7 * * *'
   workflow_dispatch:  # permite correrlo manualmente desde GitHub
 
 jobs:
